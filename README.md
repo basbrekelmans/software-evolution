@@ -59,6 +59,7 @@ Needed:
 * lookup table for conversion of histogram values to ranking:
 
   |rank|max moderate|max high|max very high|
+  |----|------------|--------|-------------|
   |++  |25%         |0%      |0%           |
   |+   |30%         |5%      |0%           |
   |o   |40%         |10%     |0%           |
