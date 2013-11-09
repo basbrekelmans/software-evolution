@@ -80,6 +80,7 @@ Needed:
 * ranking table:
 
   |rank|% duplicated code|
+  |----|-----------------|
   |++  |0-3              |
   |+   |3-5              |
   |o   |5-10             |
