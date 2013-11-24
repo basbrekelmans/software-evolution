@@ -7,17 +7,31 @@ import Relation;
 import List;
 import String;
 
+import Util;
+
 void printRawLineCount(M3 model)
 {
 	sources = getSourceFiles(model);
 	rawLinecount = getFileLOC(sources, model@documentation);
 	print("Raw total line count is: ");
 	println(rawLinecount);
+	print("Code volume ranking:     ");
+	println(rankVolumeSIG(rawLinecount));
 }
 
-set[loc] getSourceFiles(model)
+str rankVolumeSIG(num count)
 {
-	return { i | i <- range(model@containment), i.scheme == "java+compilationUnit" };
+	bounds = [<0, "++">, <66, "+">, <246, "o">, <665, "-">, <1310, "--">];
+
+	ranking = "";
+	
+	for(<bnd, rank> <- bounds)
+	{
+		if(count/1000 >= bnd)
+			ranking = rank;
+	}
+	
+	return ranking;
 }
 
 num getFileLOC(sources, docs)
