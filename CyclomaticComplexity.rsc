@@ -88,7 +88,7 @@ int getCCForMethod(Declaration method) {
 		   case \foreach(_, _, _): result += 1;
 		   case \while(_, _): result += 1;
 		   case \defaultCase(): result += 1;
-		   case \case(_): result += 1;
+		   case \switch(_, blocks): result += size(blocks);
 		   case \catch(_, _): result += 1;
 	}
 	return result;
