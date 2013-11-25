@@ -10,136 +10,110 @@ import Set;
 
 import lang::java::jdt::m3::Core;
 
-alias RollingHash = rel[int, tuple[loc, int]];
+alias RollingHash = rel[list[str], tuple[int, int]];
 
-void printDup()
+public num getDuplicateLineCount(M3 model)
 {
-	M3 model = createM3FromEclipseProject(|project://Karel|);
-	set[loc] files = getSourceFiles(model);
+	list[loc] files = sort(getSourceFiles(model));
+	println("  Number of files: <size(files)>");
 	
 	// calculate rolling hashes for each line in every file
+	contents = ();
 	hashes = {};
-	for(f <- files)
+	for(f <- [0..size(files)])
 	{
-		lines = readFileLines(f);	
+		lines = getFileLines(files[f], model@documentation);
+		contents[files[f]] = lines;
 		hashes += roll(f, lines);
 	}
+	println("  Number of hashes: <size(hashes)>");
 	
 	// create hash table from rolling hashes
-	map[int, rel[loc,int]] table = index(hashes);
+	table = index(hashes);
+	println("  Number of unique hashes: <size(table)>");
 	
-	// create a set of locations that have the same hash
-	dupes = union({ combinations(table[x]) | x <- table, size(table[x]) > 1 });
-	print("Number of potential 6-line duplicates: ");
-	println(size(dupes));
+	// remove hashes having only one occurence
+	table = ( x:table[x] | x <- table, size(table[x]) > 1 );
+	println("  Number of unique hashes with duplicates: <size(table)>");
 	
-	// group all combinations that have the same files
-	count = 0;
-	groups = {};
-	
-	for(x <- dupes)
+	dupes = {};
+	for(hash <- table)
 	{
-		// make sure locations are in alphabetical order for later comparison
-		element = sort(x);
-		
-		loc1 = element[0][0];
-		loc2 = element[1][0];
-		pos1 = element[0][1];
-		pos2 = element[1][1];
-		
-		groups += <<loc1, loc2>, <pos1, pos2>>;
-		
-		// report progress to user
-		count+= 1;
-		if(count % 10000 == 0) println("Progress: <count>");
-	}
-
-	combos = index(groups);
-	print("Number of file combinations: ");
-	println(size(combos));
-	
-	// analyze all the potential combinations
-	finalDupeLocs = {}; 
-	
-	for(fl <- combos)
-	{
-		// augment the location list of lines to be compared
-		locations = extendLoc(sort(toList(combos[fl]), cmpHead));
-		lines = [ readFileLines(fl[0]), readFileLines(fl[1]) ];
-		
-		// count matched lines in this combo
-		count = 0;
-		lastLoc = <-10,-10>;
-		
-		for(ll <- locations)
+		locations = table[hash];		
+		while(size(locations) > 0)
 		{
-			if(incr(lastLoc) != ll || !sameLine(lines, ll))
+			<elt, locations> = takeOneFrom(locations);
+			for(elt2 <- locations, sameLine2(files, contents, elt, elt2))
 			{
-				if(count >= 6)
-				{
-					finalDupeLocs += { <fl[0], lastLoc[0]-1-j> | j <- [0..count] };
-					finalDupeLocs += { <fl[1], lastLoc[1]-1-j> | j <- [0..count] };
-				}
-				count = 0;
+				locations -= elt2;
+				dupes += elt; // this is inefficient
+				dupes += elt2;
 			}
-			else
-				count += 1;
-			
-			lastLoc = ll;
-		}
-
-		if(count >= 6)
-		{
-			finalDupeLocs += { <fl[0], last(locations)[0]-1-j> | j <- [0..count] };
-			finalDupeLocs += { <fl[1], last(locations)[1]-1-j> | j <- [0..count] };
 		}
 	}
+	dupeIndex = index(dupes);
 	
-	dupeIndex = index(finalDupeLocs);
-	
+	finalCount = 0;
 	for(blu <- dupeIndex)
-	{
-		println(blu);
-		println(foldList(sort(dupeIndex[blu])));
-	}
+		finalCount += size(extendl(sort(dupeIndex[blu])));
+	
+	return(finalCount);
+	
 }
 
-set[rel[loc,int]] combinations(table)
+public str rankDupSIG(int percentage)
 {
-	return( { {x,y} | x <- table, y <- table - x } );
+	bounds = [<0, "++">, <3, "+">, <5, "o">, <10, "-">, <20, "--">];
+
+	ranking = "";
+	
+	for(<bnd, rank> <- bounds)
+	{
+		if(percentage >= bnd)
+			ranking = rank;
+	}
+	
+	return ranking;
 }
 
-lrel[int,int] extendLoc(lrel[int,int] locations)
+private rel[tuple[int,int],tuple[int,int]] combinations(table)
+{
+	return { <<x[0],y[0]>,<x[1],y[1]>> | x <- table, y <- table - x, x[0] < y[0] };
+}
+
+private list[int] extendl(list[int] locations)
 {
 	extended = [head(locations)];
 	prevLoc = head(locations);
 	
 	for(location <- tail(locations))
 	{
-		if(location != incr(prevLoc))
-			extended += nextLocs(prevLoc);
+		if(location != 1 + prevLoc)
+			extended += nextl(prevLoc);
 		
 		extended += location;
 		prevLoc = location;
 	}
 	
-	extended += nextLocs(prevLoc);
+	extended += nextl(prevLoc);
 	return extended;
 }
 
-lrel[int,int] nextLocs(tuple[int,int] location)
+private list[int] nextl(int location)
 {
-	return(zip([location[0]+1..location[0]+6],[location[1]+1..location[1]+6]));
+	return( [ location + i | i <- [1..6] ] );
 }
 
-bool sameLine(list[list[str]] lines, tuple[int,int] locations)
+private bool sameLine2(list[loc] files, contents, tuple[int,int] elt, tuple[int,int] elt2)
 {
-	return( lines[0][locations[0]-1] == lines[1][locations[1]-1] );
+	lines  = contents[files[elt[0]]];
+	lines2 = contents[files[elt2[0]]];
+	return(reducer( [lines[elt[1]-1+range] == lines2[elt2[1]-1+range] | range <- [0..6]], and, true ));
 }
 
-bool cmpHead(tuple[int,int] a, tuple[int,int] b) = a[0] < b[0];
+private bool and(bool fst, bool snd) = fst && snd;
 
-lrel[int,int] foldList(list[int] numbers)
+private lrel[int,int] foldList(list[int] numbers)
 {
 	cur = head(numbers);
 	len = 1;
@@ -165,76 +139,63 @@ lrel[int,int] foldList(list[int] numbers)
 	return rtn;
 }
 
-tuple[int,int] incr(<int x, int y>) { return <x+1,y+1>; }
-tuple[loc,int] incr(<loc l, int x>) { return <l,x + 1>; }
-
-RollingHash roll(f, list[str] lines)
+private RollingHash roll(int fileNum, list[str] lines)
 {
-	hashes = mapper(lines, hashLine);
-	cursor = 0;
 	window = 6;
 	
-	// skip big comments at start of file
-	while(hashes[cursor] == 99)
-		cursor += 1;
-
 	// early escape for short files	
-	if(size(lines) < cursor + window) return {};
+	if(size(lines) < window) return {};
 	
 	// calculate hash for first 6 lines
-	first = hashes[cursor];
+	nextHash = lines[0..6];
 	
-	for(i <- [cursor+1..cursor+window])
+	rollingHashes = {};
+	rollingHashes += <nextHash, <fileNum, 1>>;
+		
+	for(ln <- [1..size(lines)-(window-1)])
 	{
-		first *= 100;
-		first += hashes[i];
+		nextHash = tail(nextHash);
+		nextHash += lines[ln + window - 1];
+		rollingHashes += <nextHash, <fileNum, ln+1>>;
 	}
 
-	rollingHashes = {};
-	rollingHashes += <first, <f, cursor+1>>;
-	
-	nextHash = first;
-	
-	powWindow = pow(window);
-	
-	for(ln <- [cursor+1..size(lines)-(window-1)])
-	{
-		nextHash = (nextHash * 100) % powWindow;
-		nextHash += hashes[ln + window - 1];
-		rollingHashes += <nextHash, <f, ln+1>>;
-	}
-	
 	return rollingHashes;
 }
 
-int hashLine(str line)
+private list[str] getFileLines(f, docs)
 {
-	line = trim(line);
+	lines = readFileLines(f);   // actual file contents
+	docLines = docs[f];         // documentation locations
 
-	if(startsWith(line, "/*") || startsWith(line,"*"))
-		// big comments get hash 99
-		return 99;
-	else
+	// take each doc location
+	for(dl <- docLines)
 	{
-		// other lines get the line length
-		modulo = 88;
-		content = size(line);
-		return 11 + content % modulo;
+		// replace the doc with white space
+		for(lineNum <- [dl.begin.line..dl.end.line+1])
+		{
+			begin = dl.begin.column;
+			end = dl.end.column;
+			
+			if(lineNum != dl.end.line)
+				end = size(lines[lineNum-1]);
+			if(lineNum != dl.begin.line)
+				begin = 0;
+			
+			lines[lineNum-1] = removeComment(lines[lineNum-1], begin, end);
+		}
 	}
+	
+	result = [];
+	for(line <- lines)
+	{
+		if(trim(line) != "")
+			result += trim(line);
+	}
+	return(result);
 }
 
-int pow(int exp)
+private str removeComment(str line, int begin, int end)
 {
-	if (exp == 0)
-	{
-		return 1;
-	}
-	else
-	{
-		return 100 * pow(exp - 1);
-	}
+	spaces = stringChars([ 0 | x <- [0..(end-begin)] ]);
+	return substring(line, 0, begin) + spaces + substring(line, end); 
 }
-
-
-
-
