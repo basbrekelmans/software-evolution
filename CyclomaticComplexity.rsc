@@ -3,6 +3,9 @@ module CyclomaticComplexity
 import lang::java::jdt::m3::Core;
 import lang::java::m3::Core;
 import lang::java::m3::AST;
+
+import util::Math;
+
 import Prelude;
 import List;
 import IO;
@@ -15,7 +18,7 @@ void printCyclomaticComplexity(M3 model, bool verbose)  {
 	for (<method,location> <- [<getMethodASTEclipse(l), l> | l <- methods(model)]) 
 	{
 		int cc = getCCForMethod(method);
-		if (verbose) 
+		if(verbose)
 		{
 			print(location);
 			print(": ");
@@ -26,40 +29,38 @@ void printCyclomaticComplexity(M3 model, bool verbose)  {
 	
 	list[str] rankSymbols = ["++", "+", "o", "-", "--"];
 	
-	list[list[num]] lookup = [[1, 0.25, 0.00, 0.00],
-	                          [1, 0.30, 0.05, 0.00],
-	                          [1, 0.40, 0.10, 0.00],
-	                          [1, 0.50, 0.15, 0.05]];
+	list[list[num]] lookup = [[100, 25,  0, 0],
+	                          [100, 30,  5, 0],
+	                          [100, 40, 10, 0],
+	                          [100, 50, 15, 5]];
 	
 	num totalUnits = sum(riskTable) + 0.0;
 	
-	println("absolute values: ");
-	println(riskTable);
+	//println("absolute values: ");
+	//println(riskTable);
 	
-	riskTable = [v / totalUnits | v <- riskTable];
+	riskTable = [toInt(v / totalUnits * 100) | v <- riskTable];
 	
 	int rankSymbolIndex = 0;
 	
-	while (rankSymbolIndex < (size(lookup) - 1) 
-	       || isSmallerOrEqual(lookup[rankSymbolIndex], riskTable)) {
-				rankSymbolIndex += 1;
+	while(rankSymbolIndex < (size(lookup) - 1) && exceeds(riskTable, lookup[rankSymbolIndex]))
+	{
+		rankSymbolIndex += 1;
 	}
 	
-	println("ratings: ");
-	print(rankSymbols[rankSymbolIndex] + " ");
-	
-	
-	
-	println(riskTable);
+	println("  <riskTable>");
+
+	print("  Rating: ");
+	println(rankSymbols[rankSymbolIndex]);
 }
 
-bool isSmallerOrEqual(list[num] as, list[num] bs) {
+bool exceeds(list[num] as, list[num] bs) {
 	for (i <- [0..size(as)]) {
 		if (as[i] > bs[i]) { 
-			return false;
+			return true;
 		}
 	}
-	return true;
+	return false;
 }
 
 int getCCCategory(int complexity) {
