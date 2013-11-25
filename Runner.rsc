@@ -4,6 +4,7 @@ import lang::java::jdt::m3::Core;
 import util::Math;
 import IO;
 
+import CyclomaticComplexity;
 import LOC;
 import RollingDup;
 
@@ -24,4 +25,8 @@ void run()
 	println("  Actual dupe line count: <dupeLines>  (<percentage>%)");  
 	print("  Duplicate ranking:     ");
 	println(rankDupSIG(percentage));
+	
+	println("Calculating cyclomatic complexity: ");
+	printCyclomaticComplexity(model);
+	
 }
