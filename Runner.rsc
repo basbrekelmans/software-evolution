@@ -11,7 +11,7 @@ import RollingDup;
 void run()
 {
 	println("Loading project...");
-	model = createM3FromEclipseProject(|project://Karel|);
+	model = createM3FromEclipseProject(|project://smallsql|);
 
 	print("Calculating line count:  ");
 	lineCount = getLineCount(model);
@@ -27,6 +27,6 @@ void run()
 	println(rankDupSIG(percentage));
 	
 	println("Calculating cyclomatic complexity: ");
-	printCyclomaticComplexity(model);
+	printCyclomaticComplexity(model, false);
 	
 }
