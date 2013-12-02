@@ -22,6 +22,7 @@ public num getDuplicateLineCount(M3 model)
 	hashes = {};
 	for(l <- domain(contents))
 	{
+		contents[l] = removeEmptyLines(contents[l]);
 		lines = contents[l];
 		hashes += roll(l, lines);
 	}

@@ -1,5 +1,7 @@
 module SigRanking
 
+import List;
+
 public int getCategory(bounds, val) {
     int result = 0;
     while (result < size(bounds) && val >= bounds[result]) {
@@ -19,7 +21,7 @@ public int getRank(list[list[num]] lookup, list[num] values) {
 	return rankSymbolIndex; 
 }
 
-public str getRankSymbol(num score) {
+public str getRankSymbol(int score) {
 
 	list[str] rankSymbols = ["++", "+", "o", "-", "--"];
 	return rankSymbols[score];

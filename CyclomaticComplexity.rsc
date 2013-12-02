@@ -11,23 +11,22 @@ import List;
 import IO;
 import UnitSize;
 import FileHelper;
+import Map;
+import SigRanking;
 
-
-
-void printCyclomaticComplexity(M3 model, bool verbose)  {	
+map[loc, num] getCyclomaticComplexities(M3 model)  {	
+	map[loc, num] complexities = ();
+	map[loc, num] sizes = getUnitSizes(model);
+	
 	list[num] riskTable = [0,0,0,0];
-		
-	for (<method,location> <- [<getMethodASTEclipse(l), l> | l <- methods(model)]) 
+	for (<method,location> <- [<getMethodASTEclipse(m), l> |  <m,l> <- model@declarations, m.scheme == "java+method"]) 
 	{
 		int cc = getCCForMethod(method);
-		if(verbose)
-		{
-			print(location);
-			print(": ");
-			println(cc);
-		}
-		riskTable[getCCCategory(cc)] += 1;
+		complexities[location] = cc;
+		int category = getCCCategory(cc);
+		riskTable[getCCCategory(cc)] += sizes[location];
 	}
+	
 	
 	
 	list[list[num]] lookup = [[100, 25,  0, 0],
@@ -41,10 +40,11 @@ void printCyclomaticComplexity(M3 model, bool verbose)  {
 	
 	
 	
-	println("  <riskTable>");
+	println("<riskTable>");
 
 	print("  Rating: ");
-	println(rankSymbols[rankSymbolIndex]);
+	println(getRankSymbol(getRank(lookup, riskTable)));
+	return complexities;
 }
 
 bool exceeds(list[num] as, list[num] bs) {
@@ -58,9 +58,8 @@ bool exceeds(list[num] as, list[num] bs) {
 
 int getCCCategory(int complexity) {
 	list[int] bounds = [10,20,50];	
-	return getIndexForBoundsList(complexity, bounds);
+	return getCategory(bounds, complexity);
 }
-
 
 
 int getCCForMethod(Declaration method) {

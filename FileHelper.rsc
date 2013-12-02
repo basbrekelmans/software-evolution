@@ -53,8 +53,12 @@ private list[str] getFileLines(f, docs)
 		}
 	}
 	
+   	return lines;
+}
+
+public list[str] removeEmptyLines(list[str] input) {
 	result = [];
-	for(line <- lines)
+	for(line <- input)
 	{
 		if(trim(line) != "")
 			result += trim(line);
