@@ -7,11 +7,12 @@ import IO;
 import CyclomaticComplexity;
 import LOC;
 import RollingDup;
+import UnitSize;
 
 void run()
 {
 	println("Loading project...");
-	model = createM3FromEclipseProject(|project://smallsql|);
+	model = createM3FromEclipseProject(|project://Karel|);
 
 	print("Calculating line count:  ");
 	lineCount = getLineCount(model);
@@ -28,5 +29,8 @@ void run()
 	
 	println("Calculating cyclomatic complexity: ");
 	printCyclomaticComplexity(model, false);
+	
+	println("Calculating unit size: ");
+	printUnitSize(model);
 	
 }

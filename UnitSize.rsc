@@ -10,12 +10,12 @@ import Util;
 import util::Math;
 
 
-set[loc] getSourceFiles(model)
+private set[loc] getSourceFiles(model)
 {
         return { i | i <- range(model@containment), i.scheme == "java+compilationUnit" };
 }
 
-void test123(M3 model)
+public void printUnitSize(M3 model)
 {
         sources = getSourceFiles(model);
         unitSizes = getFileUnitSize(sources, model);
@@ -24,20 +24,57 @@ void test123(M3 model)
         println("total lines of code in methods: <methodLines>");
         println("number of methods: <size(unitSizes)>");
         println("sorted output: <sort([lc | <m, lc> <- unitSizes])>");
-        sizes = [0,0,0,0];
+        riskTable = [0,0,0,0];
         
         for (<m, lc> <- unitSizes) {
         	     int cat = getUSCategory(lc);
-        	  	   sizes[cat] += 1;
+        	  	   riskTable[cat] += 1;
         }
         
-        real sumSizes = toReal(sum(sizes));
-        sizes = [toInt(i / sumSizes * 100) | i <- sizes];
+        //real sumSizes = toReal(sum(sizes));
+        //riskTable = [toInt(i / sumSizes * 100) | i <- sizes];
+        //
+        //println(riskTable);
         
-        println(sizes);
         
+        
+        	list[str] rankSymbols = ["++", "+", "o", "-", "--"];
+	
+	list[list[num]] lookup = [[100, 25,  0, 0],
+	                          [100, 30,  5, 0],
+	                          [100, 40, 10, 0],
+	                          [100, 50, 15, 5]];
+	
+	num totalUnits = sum(riskTable) + 0.0;
+	
+	//println("absolute values: ");
+	//println(riskTable);
+	
+	riskTable = [toInt(v / totalUnits * 100) | v <- riskTable];
+	
+	int rankSymbolIndex = 0;
+	
+	while(rankSymbolIndex < (size(lookup) - 1) && exceeds(riskTable, lookup[rankSymbolIndex]))
+	{
+		rankSymbolIndex += 1;
+	}
+	
+	println("  <riskTable>");
+
+	print("  Rating: ");
+	println(rankSymbols[rankSymbolIndex]);
         
 }
+
+bool exceeds(list[num] as, list[num] bs) {
+	for (i <- [0..size(as)]) {
+		if (as[i] > bs[i]) { 
+			return true;
+		}
+	}
+	return false;
+}
+
 
 int getUSCategory(int methodSize) {
     bounds = [30, 44, 74];

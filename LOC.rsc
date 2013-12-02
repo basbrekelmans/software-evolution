@@ -62,6 +62,7 @@ private num getFileLOC(sources, docs)
 private str removeComment(str line, int begin, int end)
 {
 	spaces = stringChars([ 0 | x <- [0..(end-begin)] ]);
+	spaces = "<for (i <- [0..(end-begin)]) {> <}>";
 	return substring(line, 0, begin) + spaces + substring(line, end); 
 }
 
