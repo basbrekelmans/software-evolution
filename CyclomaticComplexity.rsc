@@ -14,7 +14,7 @@ import FileHelper;
 import Map;
 import SigRanking;
 
-map[loc, num] getCyclomaticComplexities(M3 model)  {	
+map[loc, num] getCyclomaticComplexity(M3 model)  {	
 	map[loc, num] complexities = ();
 	map[loc, num] sizes = getUnitSizes(model);
 	

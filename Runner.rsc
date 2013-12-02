@@ -5,14 +5,14 @@ import util::Math;
 import IO;
 
 import CyclomaticComplexity;
-import LOC;
+import LinesOfCode;
 import RollingDup;
 import UnitSize;
 
 void run()
 {
 	println("Loading project...");
-	model = createM3FromEclipseProject(|project://Karel|);
+	model = createM3FromEclipseProject(|project://smalltest|);
 
 	print("Calculating line count:  ");
 	lineCount = getLineCount(model);
@@ -28,7 +28,7 @@ void run()
 	println(rankDupSIG(percentage));
 	
 	println("Calculating cyclomatic complexity: ");
-	printCyclomaticComplexity(model, false);
+	cc = getCyclomaticComplexity(model);
 	
 	println("Calculating unit size: ");
 	printUnitSize(model);

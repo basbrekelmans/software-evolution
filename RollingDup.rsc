@@ -64,8 +64,8 @@ public num getDuplicateLineCount(M3 model)
 public str rankDupSIG(int percentage)
 {
 	bounds = [3,5,10];
-	index = getCategory(bounds, count);
-	return getRankSymbol(index);
+	i = getCategory(bounds, percentage);
+	return getRankSymbol(i);
 }
 
 private rel[tuple[int,int],tuple[int,int]] combinations(table)

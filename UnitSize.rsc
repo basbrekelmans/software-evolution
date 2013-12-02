@@ -5,6 +5,7 @@ import lang::java::jdt::m3::Core;
 import IO;
 import Relation;
 import List;
+import Set;
 import String;
 import FileHelper;
 import Map;
@@ -14,15 +15,14 @@ import util::Math;
 public void printUnitSize(M3 model)
 {
         sources = getSourceFiles(model);
-        unitSizes = getUnitSizes(sources, model);
+        unitSizes = getUnitSizes(model);
         println("volume per method");
-        methodLines = sum([lc | <m, lc> <- unitSizes]);
+        methodLines = sum(range(unitSizes));
         println("total lines of code in methods: <methodLines>");
         println("number of methods: <size(unitSizes)>");
-        println("sorted output: <sort([lc | <m, lc> <- unitSizes])>");
         riskTable = [0,0,0,0];
         
-        for (<m, lc> <- unitSizes) {
+        for (lc <- range(unitSizes)) {
         	     int cat = getUSCategory(lc);
         	  	   riskTable[cat] += 1;
         }

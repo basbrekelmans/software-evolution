@@ -12,10 +12,9 @@ public num getLineCount(M3 model)
 	return sum([size(removeEmptyLines(f)) | f <- range(getPhysicalFilesWithoutComments(model))]);
 }
 
-public str rankVolumeSIG(num count)
+public str rankVolumeSIG(int count)
 {
-	count = count / 1000;
 	bounds = [66,246,665];
-	index = getCategory(bounds, count);
-	return getRankSymbol(index);
+	i = getCategory(bounds, count / 1000);
+	return getRankSymbol(i);
 }

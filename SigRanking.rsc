@@ -2,7 +2,7 @@ module SigRanking
 
 import List;
 
-public int getCategory(bounds, val) {
+public int getCategory(list[num] bounds, num val) {
     int result = 0;
     while (result < size(bounds) && val >= bounds[result]) {
     	result += 1;
