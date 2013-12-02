@@ -53,5 +53,3 @@ private num getFileLinesOfCode(sources, docs)
 	
 	return total;
 }
-
-
