@@ -8,12 +8,8 @@ import List;
 import String;
 import Util;
 import util::Math;
+import FileHelper;
 
-
-set[loc] getSourceFiles(model)
-{
-        return { i | i <- range(model@containment), i.scheme == "java+compilationUnit" };
-}
 
 void test123(M3 model)
 {
@@ -25,9 +21,9 @@ void test123(M3 model)
         println("number of methods: <size(unitSizes)>");
         println("sorted output: <sort([lc | <m, lc> <- unitSizes])>");
         sizes = [0,0,0,0];
-        
+        bounds = [30, 44, 74];
         for (<m, lc> <- unitSizes) {
-        	     int cat = getUSCategory(lc);
+        	     int cat = getSigCategory(bounds, lc);
         	  	   sizes[cat] += 1;
         }
         
@@ -39,15 +35,7 @@ void test123(M3 model)
         
 }
 
-int getUSCategory(int methodSize) {
-    bounds = [30, 44, 74];
-    int result = 0;
-    while (result < size(bounds) && methodSize >= bounds[result]) {
-    		    result += 1;
-    }
-    return result;
-        
-}
+
 
 list[tuple[loc, num]] getFileUnitSize(sources, model)
 {
@@ -86,21 +74,4 @@ list[tuple[loc, num]] getFileUnitSize(sources, model)
         }
         
         return result;
-}
-
-str removeComment(str line, int begin, int end)
-{
-        spaces = stringChars([ 0 | x <- [0..(end-begin)] ]);
-        return substring(line, 0, begin) + spaces + substring(line, end); 
-}
-
-num countNonEmptyLines(list[str] lines)
-{
-		       return countNonEmptyLines(lines, 0, size(lines));
-}
-
-num countNonEmptyLines(list[str] lines, int begin, int end) 
-{
-	  	   return size([i | i <- [begin..end], size(trim(lines[i])) > 0]);
-	  	   	    
 }

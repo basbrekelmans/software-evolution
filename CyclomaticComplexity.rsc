@@ -9,6 +9,8 @@ import util::Math;
 import Prelude;
 import List;
 import IO;
+import UnitSize;
+import FileHelper;
 
 
 
@@ -27,7 +29,6 @@ void printCyclomaticComplexity(M3 model, bool verbose)  {
 		riskTable[getCCCategory(cc)] += 1;
 	}
 	
-	list[str] rankSymbols = ["++", "+", "o", "-", "--"];
 	
 	list[list[num]] lookup = [[100, 25,  0, 0],
 	                          [100, 30,  5, 0],
@@ -36,17 +37,9 @@ void printCyclomaticComplexity(M3 model, bool verbose)  {
 	
 	num totalUnits = sum(riskTable) + 0.0;
 	
-	//println("absolute values: ");
-	//println(riskTable);
-	
 	riskTable = [toInt(v / totalUnits * 100) | v <- riskTable];
 	
-	int rankSymbolIndex = 0;
 	
-	while(rankSymbolIndex < (size(lookup) - 1) && exceeds(riskTable, lookup[rankSymbolIndex]))
-	{
-		rankSymbolIndex += 1;
-	}
 	
 	println("  <riskTable>");
 
@@ -68,16 +61,7 @@ int getCCCategory(int complexity) {
 	return getIndexForBoundsList(complexity, bounds);
 }
 
-int getIndexForBoundsList(int v, list[int] bounds) {
-	int index = 0;
-	while (index < size(bounds)) {
-		if (v <= bounds[index]) {
-			return index;
-		}
-		index += 1;
-	}
-	return size(bounds);
-}
+
 
 int getCCForMethod(Declaration method) {
 	int result = 1;
@@ -89,7 +73,7 @@ int getCCForMethod(Declaration method) {
 		   case \foreach(_, _, _): result += 1;
 		   case \while(_, _): result += 1;
 		   case \defaultCase(): result += 1;
-		   case \switch(_, blocks): result += size(blocks);
+		   case \switch(_, blocks): result += 1;
 		   case \catch(_, _): result += 1;
 	}
 	return result;
