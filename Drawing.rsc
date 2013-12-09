@@ -64,11 +64,18 @@ void renderMethods(str projName, map[loc, num] ccs, map[loc, num] sizes) {
 	num maxCC = max(range(ccs));
 	
 		
-	interestingMethods = [<l,ccs[l]> | l <- ccs, ccs[l] > 2];
+	interestingMethods = [<l,ccs[l]> | l <- ccs, ccs[l] >2];
 	
 	
 	boxes = [createBox(sizes, l, toReal(n / maxCC)) | <l, n> <- interestingMethods];
 
+
+	render(	box(
+					treemap(boxes),
+					size(250,500)
+				));
+				
+	return;
 
 	render(vcat([
 				//header
@@ -80,7 +87,10 @@ void renderMethods(str projName, map[loc, num] ccs, map[loc, num] sizes) {
 					gap(5)
 				),
 				//map
-				treemap(boxes),
+				box(
+					treemap(boxes),
+					size(100, 100)
+				),
 				//footer
 				box(
 					hcat([
