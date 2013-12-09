@@ -12,7 +12,7 @@ import UnitSize;
 void run()
 {
 	println("Loading project...");
-	model = createM3FromEclipseProject(|project://smalltest|);
+	model = createM3FromEclipseProject(|project://smallersql|);
 
 	print("Calculating line count:  ");
 	lineCount = getLineCount(model);
