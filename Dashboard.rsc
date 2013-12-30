@@ -16,11 +16,7 @@ private M3 model;
 
 public void run()
 {
-	model = createM3FromEclipseProject(|project://smallersql|);
-	//packs = packagesContainingCode(model);
-	
-	//str textLabel = "Untest";
-	
+	model = createM3FromEclipseProject(|project://smallsql|);
 	renderProjectView();
 }
 
@@ -29,6 +25,7 @@ private void renderProjectView()
 	set[loc] packages = packagesContainingCode(model);
 
 	render(vcat([
+		text("Project overview", fontSize(20)),
 		overview(model),
 		grid(gridify([ clearBox(overlay([ellipse(
 				shrink(arbReal()), fillColor("blue"), 
@@ -41,6 +38,11 @@ private void renderProjectView()
 			),
 			text(pck.path)])) | pck <- packages ]))
 	]));
+}
+
+private set[loc] packagesContainingCode(M3 model)
+{
+	return { x[0] | x <- model@containment, x[0].scheme == "java+package" && x[1].scheme != "java+package" };
 }
 
 private void renderPackageView(loc package)
@@ -64,6 +66,11 @@ private void renderPackageView(loc package)
 	]));
 }
 
+public set[loc] filesFromPackage(M3 model, loc package)
+{
+	return { x[1] | x <- model@containment, x[0] == package }; 
+}
+
 private Figure clearBox(Figure contents) = box(box(contents, shrink(0.9), lineColor(color("Red", 0.0))), lineColor(color("Red", 0.0)));
 
 private list[list[Figure]] gridify(list[Figure] figs)
@@ -75,16 +82,6 @@ private list[list[Figure]] gridify(list[Figure] figs)
 	{
 		append([ figs[j] | j <- [i*width..min(size(figs),i*width+width)] ]);
 	}
-}
-
-private set[loc] packagesContainingCode(M3 model)
-{
-	return { x[0] | x <- model@containment, x[0].scheme == "java+package" && x[1].scheme != "java+package" };
-}
-
-public set[loc] filesFromPackage(M3 model, loc package)
-{
-	return { x[1] | x <- model@containment, x[0] == package }; 
 }
 
 private Figure overview(M3 model)
