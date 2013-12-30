@@ -8,16 +8,59 @@ import lang::java::jdt::m3::Core;
 
 import vis::Figure;
 import vis::Render;
+import vis::KeySym;
+
+import util::Editors;
+
+private M3 model;
 
 public void run()
 {
-	model = createM3FromEclipseProject(|project://hsqldb|);
-	packs = packagesContainingCode(model);
-	println(packs);
+	model = createM3FromEclipseProject(|project://smallersql|);
+	//packs = packagesContainingCode(model);
 	
+	//str textLabel = "Untest";
+	
+	renderProjectView();
+}
+
+private void renderProjectView()
+{
+	set[loc] packages = packagesContainingCode(model);
+
 	render(vcat([
 		overview(model),
-		grid(gridify([ clearBox(overlay([ellipse(shrink(arbReal()), fillColor("blue")), text(pck.path)])) | pck <- packs ]))
+		grid(gridify([ clearBox(overlay([ellipse(
+				shrink(arbReal()), fillColor("blue"), 
+					onMouseUp(bool (int butnr, map[KeyModifier,bool] modifiers)
+					{
+						renderPackageView(pck);
+						return true;
+					}
+				)
+			),
+			text(pck.path)])) | pck <- packages ]))
+	]));
+}
+
+private void renderPackageView(loc package)
+{
+	set[loc] files = filesFromPackage(model, package);
+
+	render(vcat([
+		text(package.path, fontSize(20)),
+		grid(gridify([ clearBox(overlay(
+		
+		[ellipse(
+				shrink(arbReal()), fillColor("blue"), 
+					onMouseUp(bool (int butnr, map[KeyModifier,bool] modifiers)
+					{
+						util::Editors::edit(pck);
+						return true;
+					}
+				)
+			),
+			text(pck.path)])) | pck <- files ]))
 	]));
 }
 
@@ -34,23 +77,15 @@ private list[list[Figure]] gridify(list[Figure] figs)
 	}
 }
 
-public list[list[int]] gridify2(list[int] figs)
-{
-	int height = round(sqrt(size(figs)));
-	int width = height*(height) >= size(figs) ? height : height+1;
-
-	return for(i <- [0..height])
-	{
-		append([ figs[j] | j <- [i*width..min(size(figs),i*width+width)] ]);
-	}
-}
-
 private set[loc] packagesContainingCode(M3 model)
 {
 	return { x[0] | x <- model@containment, x[0].scheme == "java+package" && x[1].scheme != "java+package" };
 }
 
-
+public set[loc] filesFromPackage(M3 model, loc package)
+{
+	return { x[1] | x <- model@containment, x[0] == package }; 
+}
 
 private Figure overview(M3 model)
 {
