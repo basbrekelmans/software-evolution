@@ -1,13 +1,17 @@
 module Drawing
 
+import Tree;
 import lang::java::jdt::m3::Core;
 import vis::Figure;
 import vis::Render;
 import CyclomaticComplexity;
 import UnitSize;
 import Map;
+import String;
+import List;
 import Set;
 import util::Math;
+import util::Resources;
 
 public void renderProject(loc projectLoc) {
 
@@ -20,10 +24,33 @@ public void renderProject(loc projectLoc) {
 	messageBox(messages);	
 	ccs = getCyclomaticComplexity(model);
 	sizes = getUnitSizes(model);
+	codeTree = getProjectStructure(projectLoc, model@containment);
 	messages += "Preparing to render";
 	messageBox(messages);	
-	renderMethods(projectLoc.authority, ccs, sizes); 
+	renderMethods(projectLoc.authority, codeTree, ccs, sizes); 
 }
+
+private loc project = head(toList(projects()));
+
+public void run() {
+	b = button("Go", void() { 
+		renderProject(project);
+	});
+	projs = sort([l.authority | l <- projects()]);
+	t = choice(projs, void(str s) { project = toLocation("project://<s>"); });
+	
+	render(box(
+			vcat([text("Select project:"), t,b],
+				 vresizable(false),
+				 vgap(10)
+				 ),
+			shrink(0.5,0.5),
+			fillColor(rgb(235, 235, 235)),
+			lineWidth(0)
+		)
+	);
+}
+
 
 private void messageBox(list[str] messages) {
 	
@@ -58,7 +85,7 @@ Figure createBox(sizes, l, interpolationValue) {
 				);
 }
 
-void renderMethods(str projName, map[loc, num] ccs, map[loc, num] sizes) { 
+void renderMethods(str projName, CodeTree tree, map[loc, num] ccs, map[loc, num] sizes) { 
 
 	
 	num maxCC = max(range(ccs));
@@ -69,13 +96,6 @@ void renderMethods(str projName, map[loc, num] ccs, map[loc, num] sizes) {
 	
 	boxes = [createBox(sizes, l, toReal(n / maxCC)) | <l, n> <- interestingMethods];
 
-
-	render(	box(
-					treemap(boxes),
-					size(250,500)
-				));
-				
-	return;
 
 	render(vcat([
 				//header
