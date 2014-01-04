@@ -85,7 +85,7 @@ int getUSCategory(int methodSize) {
 map[loc, num] getUnitSizes(model)
 {
         list[tuple[loc, num]] result = [];
-        ms = [<c.path, <c, c.begin.line, c.end.line>> | <m,c> <- model@declarations, m.scheme == "java+method"];
+        ms = [<c.path, <m, c.begin.line, c.end.line>> | <m,c> <- model@declarations, m.scheme == "java+method"];
         fileContents = getPhysicalFilesWithoutComments(model);
         // take each file
         for(f <- domain(fileContents))
@@ -95,7 +95,6 @@ map[loc, num] getUnitSizes(model)
 	        for (<m, begin, end> <- ms[path]) {
 	        	    result = result + <m, max([countNonEmptyLines(lines, begin, end), 1])>;
 	        }
-        }
-        
+		}
         return toMapUnique(result);
 }

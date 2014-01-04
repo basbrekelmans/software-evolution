@@ -19,7 +19,7 @@ map[loc, num] getCyclomaticComplexity(M3 model)  {
 	map[loc, num] sizes = getUnitSizes(model);
 	
 	list[num] riskTable = [0,0,0,0];
-	for (<method,location> <- [<getMethodASTEclipse(m), l> |  <m,l> <- model@declarations, m.scheme == "java+method"]) 
+	for (<method,location> <- [<getMethodASTEclipse(m), m> |  <m,l> <- model@declarations, m.scheme == "java+method"]) 
 	{
 		int cc = getCCForMethod(method);
 		complexities[location] = cc;
