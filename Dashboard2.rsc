@@ -22,34 +22,33 @@ private M3 model;
 private map[loc, num] ccs;
 private map[loc, num] sizes;
 
-private str title;
-private str content;
-private loc parent;
+private loc home = |project://hsqldb|;
+private loc location;
 
 private int minimumCC = 2;
 
-public Color purple = rgb(128,0,128);
+public Color purple = rgb(50,77,95);
 public Color white = rgb(255,255,255);
-public Color yellow = rgb(255,255,0);
+public Color yellow = rgb(244,202,131);
 public Color beige = rgb(255,239,198);
 public Color black = rgb(0,0,0);
+public Color background = rgb(166,130,116);
 
 public void run()
 {
-	model = createM3FromEclipseProject(|project://Karel|);
+	model = createM3FromEclipseProject(home);
 	ccs = getCyclomaticComplexity(model);
 	sizes = getUnitSizes(model);
-
+	
+	location = home;
 	renderProjectView();
 }
 
 list[Figure] methodBoxes(loc parent)
 {
 	relevantMethods = [ l[1] | l <- model@containment+, l[0] == parent, l[1].scheme == "java+method" ];
-	println(relevantMethods);
 
 	num maxCC = max(range(ccs));
-	// CC magic number moet een constant worden bovenaan programma
 	interestingMethods = [ <l,ccs[l]> | l <- relevantMethods, l in ccs, ccs[l] > minimumCC];
 	boxes = [unitBox(sizes, l, toReal(n / maxCC)) | <l, n> <- interestingMethods];
 	return(boxes);
@@ -58,39 +57,86 @@ list[Figure] methodBoxes(loc parent)
 Figure unitBox(sizes, l, interpolationValue) {
 	bool hover = false;
 	return box(
-				area(sizes[l]),
-				fillColor(Color() { return hover ? yellow
-				 : interpolateColor(white, purple, interpolationValue); }),
-				lineWidth(0),
-				onMouseEnter(void () { hover = true; }),
-				onMouseExit(void () { hover = false; }),
-				onMouseUp(bool (int butnr, map[KeyModifier,bool] modifiers)
-				{
-					util::Editors::edit(l);
-					return true;
-				}
-				));
+		area(sizes[l]),
+		fillColor(Color() { return hover ? yellow : interpolateColor(white, purple, interpolationValue); }),
+		lineWidth(0),
+		onMouseEnter(void () { hover = true; }),
+		onMouseExit(void () { hover = false; }),
+		onMouseUp(bool (int butnr, map[KeyModifier,bool] modifiers)
+		{
+			util::Editors::edit(l);
+			return true;
+		})
+	);
 }
 
 private void renderProjectView()
 {
 	set[loc] packages = packagesContainingCode(model);
 
-	render(vcat([
-			text("Project overview", fontSize(20)),
-			treemap([clearBox(
-				vcat([
-					treemap(boxes),
-					text(cleanPath(pck.path), onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers) { renderPackageView(curPck); }) )
-				]), log(size(boxes), 1.2)+1
-			) | pck <- packages, curPck := pck, boxes := methodBoxes(pck), size(boxes) > 0 ])
-		],
-		gap(10), vstartGap(true)
-	));
+	render(
+		overlay([
+			box(fillColor(background)),
+			vcat([
+				navigationTitle(),
+				treemap(
+					[
+						clearBox(
+							vcat([
+								treemap(boxes),
+								box(
+									text("<cleanPath(pck.path)> \u2192", onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers) { location = curPck; renderPackageView(curPck); }) ),
+									gap(10), resizable(false), lineWidth(0)
+								)
+							]),
+							1 + log(size(boxes), 1.2)
+						) 
+					| pck <- packages, curPck := pck, boxes := methodBoxes(pck), size(boxes) > 0
+					]
+				)
+			], gap(10), vstartGap(true))
+		])
+	);
+}
+
+private void renderPackageView(loc package)
+{
+	set[loc] files = filesFromPackage(package);
+
+	render(
+		overlay([
+			box(fillColor(background)),
+		vcat([
+		navigationTitle(),
+		treemap([clearBox(
+			vcat([
+				treemap(boxes),
+				box(
+					text(size(pck.file)>12 ? pck.file[0..10] + ".." : pck.file, fontSize(8)),
+					gap(10), resizable(false), lineWidth(0)
+				)
+			]), log(size(boxes),1.1)+1
+		) | pck <- files, curPck := pck, boxes := methodBoxes(pck), size(boxes) > 0 ])
+	], gap(10), vstartGap(true))]));
+}
+
+private Figure navigationTitle()
+{
+	if(location != home)
+		return overlay(
+			[
+				text(cleanPath(location.path), fontSize(20)),
+				text("\u21A9", fontSize(20), left(), onMouseDown(returnToProjectView))
+			],
+			vresizable(false)
+		);
+	else
+		return text(location.authority, fontSize(20));
 }
 
 bool returnToProjectView(int butnr, map[KeyModifier,bool] modifiers)
 {
+	location = home;
 	renderProjectView();
 	return true;
 } 
@@ -108,28 +154,18 @@ private set[loc] packagesContainingCode(M3 model)
 	return { x[0] | x <- model@containment, x[0].scheme == "java+package" && x[1].scheme != "java+package" };
 }
 
-private void renderPackageView(loc package)
-{
-	set[loc] files = filesFromPackage(model, package);
-
-	render(vcat([
-		overlay([text("Package: <cleanPath(package.path)>", fontSize(20)), text("\u21AB", fontSize(20), left(), onMouseDown(returnToProjectView))], vresizable(false)),
-		treemap([clearBox(
-			vcat([
-				treemap(boxes),
-				text(size(pck.file)>12 ? pck.file[0..10] + ".." : pck.file, fontSize(8))
-			]), log(size(boxes),1.1)+1
-		) | pck <- files, curPck := pck, boxes := methodBoxes(pck), size(boxes) > 0 ])
-	], gap(10), vstartGap(true)));
-}
-
-public set[loc] filesFromPackage(M3 model, loc package)
+public set[loc] filesFromPackage(loc package)
 {
 	return { x[1] | x <- model@containment, x[0] == package, x[1].scheme != "java+package" }; 
 }
 
-private Figure clearBox(Figure contents) = box(box(contents, shrink(0.9), lineColor(color("Red", 0.0))), lineColor(color("Red", 0.0)));
-private Figure clearBox(Figure contents, num boxArea) = box(box(contents, shrink(0.9), lineColor(color("Red", 0.0))), area(boxArea), lineColor(color("Red", 0.0)));
+private Figure clearBox(Figure contents, num boxArea) = box(
+	box(contents, lineWidth(20), lineColor(white)),
+	area(boxArea),
+	lineWidth(0),
+	gap(20),
+	fillColor(background)
+);
 
 private list[list[Figure]] gridify(list[Figure] figs)
 {
