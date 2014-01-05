@@ -22,7 +22,7 @@ private M3 model;
 private map[loc, num] ccs;
 private map[loc, num] sizes;
 
-private loc home = |project://smallsql|;
+private loc home = |project://Karel|;
 private loc location;
 
 private int minimumCC = 2;
@@ -57,7 +57,7 @@ list[Figure] methodBoxes(loc parent)
 Figure unitBox(sizes, l, interpolationValue) {
 	bool hover = false;
 	return box(
-		area(pow(sizes[l]/10,2)+10),
+		area(pow(sizes[l]/10,2)+5),
 		fillColor(Color() { return hover ? yellow : interpolateColor(white, purple, log2(interpolationValue)/log2(10)*60/100); }),
 		lineWidth(0),
 		onMouseEnter(void () { hover = true; }),
