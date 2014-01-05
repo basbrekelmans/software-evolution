@@ -1,3 +1,97 @@
+Software Evolution Lab 2
+==============
+
+Hoofdactiviteit: het vinden van onderdelen die potentieel negatief bijdragen
+aan de maintainability van het systeem op basis van beschikbare metrics van
+Lab1.
+
+De metrics die per onderdeel te berekenen zijn, unit cc en unit size, gebruiken
+we voor de detectie.
+
+Mogelijkheden met deze twee metrics:
+
+- individuele functies vinden die potentieel negatief bijdragen
+- modules met veel van dergelijke functies
+- packages met veel van dergelijke functies
+
+Beschikbare dimensies voor visualisatie:
+
+- locatie in systeem (project -> package -> module -> unit)
+- unit cc
+- unit size
+
+Technische mogelijkheden:
+
+- omdat interactiviteit mogelijk is kunnen we heen en weer schakelen tussen verschillende niveau's
+
+- er moet niet te weinig en niet teveel op één scherm staan
+
+  - we kunnen niet alle bovengenoemde voorbeelden op één scherm zetten
+
+  - maar voor inschatting van de ernst is makkelijk vergelijken wel nodig, bijvoorbeeld tussen packages
+
+Conclusie views:
+
+- geef meerdere niveaus:
+  - het project met alle packages
+  - een package met alle modules
+- laat in- en uitzoomen
+- laat op elk niveau de potentiële problemen zien op unitniveau
+- Treemap laat twee dimensies combineren:
+  - unit cc als kleurbereik
+  - unit size als grootte
+
+Usability:
+
+- bij "inzoomen" meer detail weergeven zodat uiteindelijk niets verborgen
+  blijft (menselijke controle van de algoritmische interpretatie)
+
+- zorg dat de verschillende onderdelen van het systeem herkenbaar blijven bij
+  in- en uitzoomen -- dit geeft de gebruikers een "sense of location"
+
+- op ieder moment moet de gebruiker naar de code van opvallende units kunnen
+  springen, naast het in- en uitzoomen
+
+- het kleurbereik in de treemap moet een goede representatie zijn van de
+  risico's van CC. daarom een logaritmische functie die zorgt dat een CC van 20
+  op 75% kleur komt en een CC van 50 (of hoger) op 100% kleur. dit is conform
+  de grenzen in het SIG-model.
+
+- op basis van bovenstaande kleurbereik kunnen grote modules enigszins
+  wegvallen tussen het kleurgeweld. daarom wordt de grootte enigszins
+  overdreven middels een polynomiale functie. Erg grote code met een relatief
+  lage CC wordt zo beter zichtbaar.
+
+- Geef niet teveel en niet te weinig niveaus. Zowel `smallsql` als `hsqldb`
+  kunnen af met het laten zien van alle packages (ook subpackages) in één view.
+  Probleem ligt eerder bij grote hoeveelheden classes in één packages, maar dat
+  kunnen we niet direct opdelen. Scrollen zou misschien slim zijn, niet gedaan.
+  Relatief kleine classes vallen nu gewoon weg uit de view.
+
+  Hierdoor kunnen we af met 2 views, waardoor de navigatie van een groot
+  project ernstig versimpeld wordt ten opzichte van de complete hierarchie.
+
+- laat goed zien waar we zijn: project of package? en waar kijken we naar?
+  classes of packages? handig voor first-time users.
+
+Bron heuristics: http://www.nngroup.com/articles/ten-usability-heuristics/
+
+Aesthetics:
+
+- zorg voor voldoende witruimte rondom onderdelen, geeft een rustig beeld en de
+  vis library doet dit niet automatisch
+
+- zorg voor bij elkaar passende kleuren die een prettig beeld geven (Adobe
+  Kuler)
+
+
+
+
+
+
+
+
+
 Software Evolution Lab 1
 ========================
 
