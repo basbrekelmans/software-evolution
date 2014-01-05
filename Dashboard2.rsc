@@ -22,7 +22,7 @@ private M3 model;
 private map[loc, num] ccs;
 private map[loc, num] sizes;
 
-private loc home = |project://hsqldb|;
+private loc home = |project://smallsql|;
 private loc location;
 
 private int minimumCC = 2;
@@ -50,15 +50,15 @@ list[Figure] methodBoxes(loc parent)
 
 	num maxCC = max(range(ccs));
 	interestingMethods = [ <l,ccs[l]> | l <- relevantMethods, l in ccs, ccs[l] > minimumCC];
-	boxes = [unitBox(sizes, l, toReal(n / maxCC)) | <l, n> <- interestingMethods];
+	boxes = [unitBox(sizes, l, toReal(n)) | <l, n> <- interestingMethods];
 	return(boxes);
 }
 
 Figure unitBox(sizes, l, interpolationValue) {
 	bool hover = false;
 	return box(
-		area(sizes[l]),
-		fillColor(Color() { return hover ? yellow : interpolateColor(white, purple, interpolationValue); }),
+		area(pow(sizes[l]/10,2)+10),
+		fillColor(Color() { return hover ? yellow : interpolateColor(white, purple, log2(interpolationValue)/log2(10)*60/100); }),
 		lineWidth(0),
 		onMouseEnter(void () { hover = true; }),
 		onMouseExit(void () { hover = false; }),
@@ -125,13 +125,13 @@ private Figure navigationTitle()
 	if(location != home)
 		return overlay(
 			[
-				text(cleanPath(location.path), fontSize(20)),
+				text("Class <cleanPath(location.path)>: all methods in classes", fontSize(20)),
 				text("\u21A9", fontSize(20), left(), onMouseDown(returnToProjectView))
 			],
 			vresizable(false)
 		);
 	else
-		return text(location.authority, fontSize(20));
+		return text("Project <location.authority>: all methods in packages", fontSize(20));
 }
 
 bool returnToProjectView(int butnr, map[KeyModifier,bool] modifiers)
