@@ -2,6 +2,7 @@ module Dashboard2
 
 import CyclomaticComplexity;
 import UnitSize;
+import Tree;
 
 import IO;
 import List;
@@ -17,12 +18,13 @@ import vis::Render;
 import vis::KeySym;
 
 import util::Editors;
+import util::Resources;
 
 private M3 model;
 private map[loc, num] ccs;
 private map[loc, num] sizes;
 
-private loc home = |project://Karel|;
+private loc home = head(toList(projects()));
 private loc location;
 
 private int minimumCC = 2;
@@ -34,14 +36,57 @@ public Color beige = rgb(255,239,198);
 public Color black = rgb(0,0,0);
 public Color background = rgb(166,130,116);
 
+//project selection and loading:
+public void renderProjectSelectionView() {
+	b = button("Go", void() { 
+	
+		location = home;
+		list[str] messages = [];
+		messages += "Loading project: <home.authority> ";
+		messageBox(messages);				
+		model = createM3FromEclipseProject(home);
+		
+		messages += "Analysing model";
+		messageBox(messages);	
+		ccs = getCyclomaticComplexity(model);
+		sizes = getUnitSizes(model);
+		codeTree = getProjectStructure(home, model@containment);
+		messages += "Preparing to render";
+		renderProjectView();		
+	});
+	projs = sort([l.authority | l <- projects()]);
+	t = choice(projs, void(str s) { home = toLocation("project://<s>"); });
+	
+	render(box(
+			vcat([text("Select project:"), t,b],
+				 vresizable(false),
+				 vgap(10)
+				 ),
+			shrink(0.5,0.5),
+			fillColor(rgb(235, 235, 235)),
+			lineWidth(0)
+		)
+	);
+}
+
+private void messageBox(list[str] messages) {
+	
+	messages = [ text(s) | s <- messages];
+	render(box(
+			vcat(messages,
+				 vresizable(false),
+				 vgap(10)
+				 ),
+			shrink(0.5,0.5),
+			fillColor(rgb(235, 235, 235)),
+			lineWidth(0)
+		)
+	);
+}
+
 public void run()
 {
-	model = createM3FromEclipseProject(home);
-	ccs = getCyclomaticComplexity(model);
-	sizes = getUnitSizes(model);
-	
-	location = home;
-	renderProjectView();
+	renderProjectSelectionView();
 }
 
 list[Figure] methodBoxes(loc parent)
@@ -54,13 +99,16 @@ list[Figure] methodBoxes(loc parent)
 	return(boxes);
 }
 
+private str methodName = "";
+
 Figure unitBox(sizes, l, interpolationValue) {
 	bool hover = false;
+	loc methodLocation = l;
 	return box(
 		area(pow(sizes[l]/10,2)+5),
 		fillColor(Color() { return hover ? yellow : interpolateColor(white, purple, log2(interpolationValue)/log2(10)*60/100); }),
 		lineWidth(0),
-		onMouseEnter(void () { hover = true; }),
+		onMouseEnter(void () { hover = true; methodName = methodLocation.file; println(methodName); }),
 		onMouseExit(void () { hover = false; }),
 		onMouseUp(bool (int butnr, map[KeyModifier,bool] modifiers)
 		{
@@ -93,7 +141,9 @@ private void renderProjectView()
 						) 
 					| pck <- packages, curPck := pck, boxes := methodBoxes(pck), size(boxes) > 0
 					]
-				)
+				),
+				text("<methodName>", 
+				fontSize(20), fontColor(black))
 			], gap(10), vstartGap(true))
 		])
 	);
@@ -126,19 +176,24 @@ private Figure navigationTitle()
 		return overlay(
 			[
 				text("Class <cleanPath(location.path)>: all methods in classes", fontSize(20)),
-				text("\u21A9", fontSize(20), left(), onMouseDown(returnToProjectView))
+				button(void() { returnToProjectView(); }, text("\u21A9", fontSize(20)), left())
 			],
 			vresizable(false)
 		);
 	else
-		return text("Project <location.authority>: all methods in packages", fontSize(20));
+		return overlay(
+			[
+				text("Package <cleanPath(location.path)>: all methods in classes", fontSize(20)),
+				button(void() { run(); }, text("\u21A9", fontSize(20)), left())
+			],
+			vresizable(false)
+		);
 }
 
-bool returnToProjectView(int butnr, map[KeyModifier,bool] modifiers)
+void returnToProjectView()
 {
 	location = home;
 	renderProjectView();
-	return true;
 } 
 
 str cleanPath(str path)
