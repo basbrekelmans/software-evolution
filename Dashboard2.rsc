@@ -20,6 +20,12 @@ import vis::KeySym;
 import util::Editors;
 import util::Resources;
 
+private map[loc, M3] modelCache = ();
+private map[loc, map[loc, num]] ccCache = ();
+private map[loc, map[loc, num]] sizesCache = ();
+public map[loc, CodeTree] codeTreeCache = ();
+
+private bool initialized = false;
 private M3 model;
 private map[loc, num] ccs;
 private map[loc, num] sizes;
@@ -35,7 +41,8 @@ public Color white = rgb(255,255,255);
 public Color yellow = rgb(244,202,131);
 public Color beige = rgb(255,239,198);
 public Color black = rgb(0,0,0);
-public Color background = rgb(166,130,116);
+public Color background = white; //rgb(166,130,116);
+public Color eclipseGray = rgb(240,236,224);
 
 //project selection and loading:
 public void renderProjectSelectionView() {
@@ -43,16 +50,34 @@ public void renderProjectSelectionView() {
 	
 		location = home;
 		list[str] messages = [];
-		messages += "Loading project: <home.authority> ";
-		messageBox(messages);				
-		model = createM3FromEclipseProject(home);
+		println("initialized: <initialized>");
+		println("model cache: <domain(modelCache)>");
+		if (initialized && location in domain(modelCache)) 
+		{
+			model = modelCache[home];
+			ccs = ccCache[home];
+			sizes = sizesCache[home];
+			codeTree = codeTreeCache[home];
+		}
+		else {
+			messages += "Loading project: <home.authority> ";
+			messageBox(messages);				
+			model = createM3FromEclipseProject(home);
+			modelCache[home] = model;
+			
+			messages += "Analysing model";
+			messageBox(messages);	
+			ccs = getCyclomaticComplexity(model);
+			ccCache[home] = ccs;
+			sizes = getUnitSizes(model);
+			sizesCache[home] = sizes;
+			codeTree = getProjectStructure(home, model@containment);
+			codeTreeCache[home] = codeTree;
+			initialized = true;
+		}
 		
-		messages += "Analysing model";
-		messageBox(messages);	
-		ccs = getCyclomaticComplexity(model);
-		sizes = getUnitSizes(model);
-		codeTree = getProjectStructure(home, model@containment);
 		messages += "Preparing to render";
+		
 		renderProjectView();		
 	});
 	projs = sort([l.authority | l <- projects()]);
@@ -64,7 +89,7 @@ public void renderProjectSelectionView() {
 				 vgap(10)
 				 ),
 			shrink(0.5,0.5),
-			fillColor(rgb(235, 235, 235)),
+			fillColor(white),
 			lineWidth(0)
 		)
 	);
@@ -94,7 +119,7 @@ private void messageBox(list[str] messages) {
 				 vgap(10)
 				 ),
 			shrink(0.5,0.5),
-			fillColor(rgb(235, 235, 235)),
+			fillColor(eclipseGray),
 			lineWidth(0)
 		)
 	);
@@ -128,10 +153,11 @@ Figure unitBox(sizes, l, interpolationValue) {
 		//text(sizes[l] > 50 ? "<methodLocation.file>" : "", fontColor(interpolateColor(purple, white, log2(interpolationValue)/log2(10)*60/100)), fontSize(8)),
 		area(pow(sizes[l]/10,2)+5),
 		fillColor(Color() { return hover ? yellow : interpolateColor(white, purple, log2(interpolationValue)/log2(10)*60/100); }),
-		lineWidth(0),
+		lineWidth(1), lineColor(white),
 		onMouseEnter(void () { hover = true; 
 			println("Method information");
 			println("name: <methodLocation.file>"); 
+			println("full path: <methodLocation.path>"); 
 			println("cc: <ccs[l]>");
 			println("loc: <sizes[l]>");			
 			}),
@@ -150,7 +176,7 @@ private void renderProjectView()
 
 	render(
 		overlay([
-			box(fillColor(background)),
+			box(fillColor(background), lineWidth(0)),
 			vcat([
 				navigationTitle(),
 				treemap(
@@ -159,8 +185,8 @@ private void renderProjectView()
 							vcat([
 								treemap(boxes),
 								box(
-									text("<cleanPath(pck.path)> \u2192", onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers) { location = curPck; renderPackageView(curPck); }) ),
-									gap(10), resizable(false), lineWidth(0)
+										text("<cleanPath(pck.path)> \u2192", onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers) { location = curPck; renderPackageView(curPck); }) ),
+										gap(2), resizable(true, false), lineWidth(0), fillColor(eclipseGray)
 								)
 							]),
 							1 + log(size(boxes), 1.2)
@@ -193,7 +219,7 @@ private void renderPackageView(loc package)
 
 	render(
 		overlay([
-			box(fillColor(background)),
+			box(fillColor(background), lineWidth(0)),
 		vcat([
 		navigationTitle(),
 		treemap([clearBox(
@@ -201,7 +227,7 @@ private void renderPackageView(loc package)
 				treemap(boxes),
 				box(
 					text(size(pck.file)>12 ? pck.file[0..10] + ".." : pck.file, fontSize(8)),
-					gap(10), resizable(false), lineWidth(0)
+					gap(2), resizable(true, false), lineWidth(0), fillColor(eclipseGray)
 				)
 			]), log(size(boxes),1.1)+1
 		) | pck <- files, curPck := pck, boxes := methodBoxes(pck), size(boxes) > 0 ])
@@ -214,7 +240,8 @@ private Figure navigationTitle()
 		return hcat(
 			[
 				button("\u21A9", returnToProjectView, left(), fontSize(20), hshrink(0.1), fillColor(background)),
-				box(text("Class <cleanPath(location.path)>: all methods in classes", fontSize(20)), lineWidth(0), fillColor(background))
+				box(text("Package <cleanPath(location.path)>: all methods in classes", fontSize(20)), lineWidth(0), fillColor(background)),
+				box(hshrink(0.1), lineWidth(0), fillColor(background))
 			],
 			vresizable(false)
 		);
@@ -222,7 +249,8 @@ private Figure navigationTitle()
 		return hcat(
 			[
 				button("\u21A9", run, left(), fontSize(20), hshrink(0.1), fillColor(background)),
-				box(text("Project <location.authority>: all methods in packages", fontSize(20)), lineWidth(0), fillColor(background))
+				box(text("Project <location.authority>: all methods in packages", fontSize(20)), lineWidth(0), fillColor(background)),
+				box(hshrink(0.1), lineWidth(0), fillColor(background))
 			],
 			vresizable(false)
 		);
@@ -253,10 +281,10 @@ public set[loc] filesFromPackage(loc package)
 }
 
 private Figure clearBox(Figure contents, num boxArea) = box(
-	box(contents, lineWidth(20), lineColor(white)),
+	box(contents, lineWidth(10), lineColor(eclipseGray)),
 	area(boxArea),
 	lineWidth(0),
-	gap(20),
+	gap(8),
 	fillColor(background)
 );
 

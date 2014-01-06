@@ -45,7 +45,7 @@ public void run() {
 				 vgap(10)
 				 ),
 			shrink(0.5,0.5),
-			fillColor(rgb(235, 235, 235)),
+			fillColor(white),
 			lineWidth(0)
 		)
 	);
@@ -61,7 +61,7 @@ private void messageBox(list[str] messages) {
 				 vgap(10)
 				 ),
 			shrink(0.5,0.5),
-			fillColor(rgb(235, 235, 235)),
+			fillColor(eclipseGray),
 			lineWidth(0)
 		)
 	);
