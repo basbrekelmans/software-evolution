@@ -23,6 +23,7 @@ import util::Resources;
 private M3 model;
 private map[loc, num] ccs;
 private map[loc, num] sizes;
+public CodeTree codeTree;
 
 private loc home = head(toList(projects()));
 private loc location;
@@ -69,6 +70,21 @@ public void renderProjectSelectionView() {
 	);
 }
 
+private CodeTree getPackageOrClassNode(loc packageLoc) {
+	visit (codeTree) {
+		case Package(l, children): 
+			if (l == packageLoc) {
+				return Package(l, children);
+			}
+		case Class(l, children): 
+			if (l == packageLoc) {
+				return Class(l, children);
+			}			
+	}
+	throw "No package exists with name: <packageLoc.uri>";
+}
+
+
 private void messageBox(list[str] messages) {
 	
 	messages = [ text(s) | s <- messages];
@@ -91,7 +107,12 @@ public void run()
 
 list[Figure] methodBoxes(loc parent)
 {
-	relevantMethods = [ l[1] | l <- model@containment+, l[0] == parent, l[1].scheme == "java+method" ];
+	CodeTree tree = getPackageOrClassNode(parent);
+	set[loc] relevantMethods = {};
+	visit (tree) {
+		case Method(loc methodLoc): relevantMethods += methodLoc;
+	}
+
 
 	num maxCC = max(range(ccs));
 	interestingMethods = [ <l,ccs[l]> | l <- relevantMethods, l in ccs, ccs[l] > minimumCC];
@@ -99,16 +120,21 @@ list[Figure] methodBoxes(loc parent)
 	return(boxes);
 }
 
-private str methodName = "";
 
 Figure unitBox(sizes, l, interpolationValue) {
 	bool hover = false;
 	loc methodLocation = l;
 	return box(
+		//text(sizes[l] > 50 ? "<methodLocation.file>" : "", fontColor(interpolateColor(purple, white, log2(interpolationValue)/log2(10)*60/100)), fontSize(8)),
 		area(pow(sizes[l]/10,2)+5),
 		fillColor(Color() { return hover ? yellow : interpolateColor(white, purple, log2(interpolationValue)/log2(10)*60/100); }),
 		lineWidth(0),
-		onMouseEnter(void () { hover = true; methodName = methodLocation.file; println(methodName); }),
+		onMouseEnter(void () { hover = true; 
+			println("Method information");
+			println("name: <methodLocation.file>"); 
+			println("cc: <ccs[l]>");
+			println("loc: <sizes[l]>");			
+			}),
 		onMouseExit(void () { hover = false; }),
 		onMouseUp(bool (int butnr, map[KeyModifier,bool] modifiers)
 		{
@@ -141,17 +167,29 @@ private void renderProjectView()
 						) 
 					| pck <- packages, curPck := pck, boxes := methodBoxes(pck), size(boxes) > 0
 					]
-				),
-				text("<methodName>", 
-				fontSize(20), fontColor(black))
+				)
 			], gap(10), vstartGap(true))
 		])
 	);
 }
 
+
+private set[loc] classesInPackage(loc package) {
+
+	CodeTree packageNode = getPackageOrClassNode(package);
+	set[loc] classes = {};
+	
+	visit (packageNode) {
+		case Class(l, _): classes += l;
+	}
+	
+	return classes;
+
+}
+
 private void renderPackageView(loc package)
 {
-	set[loc] files = filesFromPackage(package);
+	set[loc] files = classesInPackage(package);
 
 	render(
 		overlay([
@@ -173,18 +211,18 @@ private void renderPackageView(loc package)
 private Figure navigationTitle()
 {
 	if(location != home)
-		return overlay(
+		return hcat(
 			[
-				text("Class <cleanPath(location.path)>: all methods in classes", fontSize(20)),
-				button(void() { returnToProjectView(); }, text("\u21A9", fontSize(20)), left())
+				button("\u21A9", returnToProjectView, left(), fontSize(20), hshrink(0.1), fillColor(background)),
+				box(text("Class <cleanPath(location.path)>: all methods in classes", fontSize(20)), lineWidth(0), fillColor(background))
 			],
 			vresizable(false)
 		);
 	else
-		return overlay(
+		return hcat(
 			[
-				text("Package <cleanPath(location.path)>: all methods in classes", fontSize(20)),
-				button(void() { run(); }, text("\u21A9", fontSize(20)), left())
+				button("\u21A9", run, left(), fontSize(20), hshrink(0.1), fillColor(background)),
+				box(text("Project <location.authority>: all methods in packages", fontSize(20)), lineWidth(0), fillColor(background))
 			],
 			vresizable(false)
 		);
